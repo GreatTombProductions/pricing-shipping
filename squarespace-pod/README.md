@@ -32,9 +32,11 @@ These are the tools available to tune prices:
 At a certain scale, the most sensible solution may be to use a more powerful ecommerce platform and make use of any web APIs the POD service hosts. However, working within the constraints of Squarespace as detailed above, a few solutions come to mind:
 
 **1. Use the live estimates**
+
 This is undesirable for a number of reasons when shipping through POD. First, there is no guarantee that the shipping service's estimate will match your actual shipping expenses. Second, getting estimates rely on providing dimensions and weight for every product, which greatly increases the amount of labor required to maintain a store. Finally, it can lead to an inconsistent shopping experience for customers.
 
 **2. Use by-weight prices, potentially using "weight" as a code**
+
 You can use item "weights" as a workaround to the fact that Squarespace does not allow you to set different shipping costs for different products. This can be done by assigning each product an arbitrary "weight", and then mapping that weight to the true shipping cost.
 
 However, there are at least two issues with this method.
@@ -49,12 +51,13 @@ At the end of the day, we seek to balance giving our customers the best deal pos
 
 1. Baking some or all of the shipping cost into the retail price of each product
 2. Setting a fixed shipping cost by region
-3. Using by-product discounts and by-region shipping rebates to balance inequality between regions and products
+3. Using automatic product-specific discounts and by-region shipping rebates to balance inequality between regions and products
 
 Subject to the following constraints:
 
 1. The store should not lose money on any sale (this is akin to setting a target profit margin of 1%)
 2. The difference between the final price (retail + shipping) should be as close to the actual production + shipping cost on average, with no gross inequities across products or regions
+
 
 Since this is an inexact solution, there will inevitably be some products that end up more expensive than others, and some regions that are paying relatively more than others. However, doing this analysis is better than just using a rough heuristic because:
 
@@ -63,3 +66,11 @@ Since this is an inexact solution, there will inevitably be some products that e
   * As a side-note, based on our experience it is our contention that a significant proportion of brands that offer free products where the customer covers shipping "due to them going through a 3rd-party shipping provider" are simply lying.
 
 2. After performing the analysis, we can make our reasoning and process transparent. We can even visualize the degree to which your region's shipping price is not accurately reflecting the shipping cost. This is the purpose of this repository.
+
+#### A note on transparency
+
+We understand that these methods can also be tuned to optimizing profit, and that by making our analysis public savvy e-commerce developers could adapt them in a way that is less customer-friendly. However, we are willing to take this risk because:
+
+1. The analysis is not very sophisticated or novel. We believe it has limited potential to be adapted. Our focus is in minimizing inequality between regions, not maintaining an overall margin, which while being trickier and more data-intensive, has limited potential to improve existing pricing strategies.
+
+2. It is our belief that e-commerce sales are driven mostly by psychology. Finding the optimal maximum retail price in combination with artificial scarcity and discounts to drive sales. This is a different problem than objectively optimizing the discrepancy between shipping price and actual cost.
