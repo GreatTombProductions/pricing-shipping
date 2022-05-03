@@ -1,6 +1,7 @@
 #' Create Costs Dataset
 
 library(magrittr)
+library(sf)
 
 
 # Read in CSVs ------------------------------------------------------------
