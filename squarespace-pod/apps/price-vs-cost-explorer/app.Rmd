@@ -1,0 +1,142 @@
+---
+title: Consumer Price vs Production Cost Explorer
+runtime: shiny
+output:
+    flexdashboard::flex_dashboard
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(flexdashboard)
+library(sf)
+library(magrittr)
+```
+
+```{r data, include=FALSE}
+data <- readRDS("data.rds")
+regions <- readRDS("regions.rds")
+
+```
+
+# Price vs Cost Map
+
+## Cart Inputs {.sidebar data-width="400"}
+
+```{r cart}
+
+# Product Selection
+
+shiny::hr()
+
+shiny::p('Set prices for products in the "Pricing Generator" tab. By default, retail prices are set to $1 above the production cost, and shipping prices are set to the maximum shipping cost across all product types in a region.')
+
+shiny::selectizeInput(
+  "products",
+  "Products in Cart",
+  choices = sort(unique(data$product)),
+  multiple = TRUE
+)
+
+shiny::p("Add or delete items from the cart using the input above. Double click on a Quantity cell below to edit.")
+shiny::p("Note that non-integer quantities will be rounded, and values below 1 will be treated as excluding the item from the cart.")
+
+DT::DTOutput("cart", width = "99%")
+
+output$cart <- DT::renderDT({
+  tibble::tibble(Product = input$products, Quantity = rep(1, length(input$products))) %>% 
+    DT::datatable(
+      editable = list(target = "cell", disable = list(columns = 0)),
+      rownames = FALSE,
+      options = list(searching = FALSE)
+    )
+})
+
+
+shiny::actionButton(
+  "calculate",
+  "Calculate Prices and Costs by Region"
+)
+
+
+```
+
+## Map
+
+```{r initial_map}
+output$map <- leaflet::renderLeaflet({
+  leaflet::leaflet("map") %>% 
+    leaflet::addProviderTiles(leaflet::providers$CartoDB.Positron) %>% 
+    leaflet::setView(0, 0, zoom = 2) %>% 
+    leaflet::addPolygons(
+      data = regions,
+      color = "#000000FF",
+      weight = 1
+    )
+})
+leaflet::leafletOutput("map", width = "100%", height = "100%")
+```
+
+# Pricing Generator
+
+
+```{r calculate}
+
+
+```
+
+
+### Premade Strategies {data-height="200"}
+
+
+```{r pricing_strategies}
+shiny::p("As we develop heuristics and algorithms to set prices across the inventory, they will be added below.")
+```
+
+### Table
+
+```{r pricing_table}
+shiny::p('The "retail_price" and "shipping_price" columns are editable.')
+shiny::p("As per the Squarespace constraints motivating this problem, setting a retail_price for a product will set it across all regions, and setting a shipping price for a region will set it across all products.")
+
+cost_price_table <- shiny::reactiveValues(
+  tbl = data
+)
+
+DT::DTOutput("cost_price_table", width = "99%", height = "100%")
+
+output$cost_price_table <- DT::renderDT({
+  table <- cost_price_table$tbl %>% 
+    DT::datatable(
+      rownames = FALSE,
+      fillContainer = TRUE,
+      editable = list(target = "cell", disable = list(columns = c(0, 3:ncol(.))))
+    )
+})
+
+table_proxy <- DT::dataTableProxy("cost_price_table")
+
+shiny::observeEvent(input$cost_price_table_cell_edit, {
+  info = input$cost_price_table_cell_edit
+  info$col <- info$col + 1
+  info$row <- info$row
+  
+  cost_price_table$tbl <- DT::editData(
+    data = cost_price_table$tbl,
+    info, table_proxy, resetPaging = FALSE
+  )
+  
+  tbl <- cost_price_table$tbl
+
+  if (info$col == 2) {
+    # set price for all regions
+    prod <- tbl[info$row, ]$product
+    tbl <- dplyr::mutate(tbl, retail_price = dplyr::if_else(product == prod, as.numeric(info$value), retail_price))
+  } else if (info$col == 3) {
+    # set shipping price for all products in region
+    reg <- tbl[info$row, ]$region
+    tbl <- dplyr::mutate(tbl, shipping_price = dplyr::if_else(region == reg, as.numeric(info$value), shipping_price))
+  }
+  
+  cost_price_table$tbl <- tbl
+})
+```
