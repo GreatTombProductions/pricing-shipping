@@ -60,8 +60,9 @@ Subject to the following constraints:
 2. The difference between the final price (retail + shipping) should be as close to the actual production + shipping cost on average, with no gross inequities across products or regions
   * In practice, some additional margin for marketing should also be considered.
 
+Put simply: if you can only set one retail price per product, and only one shipping price per region, how can you keep prices close to the actual costs when each product+region combination has a different shipping cost?
 
-Since this is an inexact solution, there will inevitably be some products that end up more expensive than others, and some regions that are paying relatively more than others. However, doing this analysis is better than just using a rough heuristic because:
+Using the levers we have access to, there will inevitably be some products that end up more expensive than others, and some regions that are paying relatively more than others. However, doing this analysis is better than just using a rough heuristic because:
 
 1. Any other storefront on Squarespace, using a similar POD service is likely dealing with the same issues, and getting around them simply by setting generous margins on both retail and shipping costs
   * Surprisingly, there is little enforcement on shipping price matching actual shipping expenses. Effectively, stores simply have the freedom of splitting the prices of their products into two different components.
