@@ -8,10 +8,11 @@ The main challenge is as follows:
 
 1. the production cost of each product type is fixed, determined by the manufacturing costs of the POD provider.
 2. similarly, the shipping costs for each region are determined by the POD provider.
+3. Squarespace does not allow setting separate shipping prices for different products, or even different amounts of products in one order.
 
 Given these constraints, how might one set retail and shipping prices such that customers are paying an amount that reflects the true cost of making and getting a product to them?
 
-If you could set a different shipping price for each product category, this would be trivial. However, Squarespace is limited in terms of the degrees of freedom it allows a storeowner to tune.
+If you could set a different shipping price for each product category, this would be trivial. However, since Squarespace is limited in terms of the degrees of freedom it allows a storeowner to tune, it is not.
 
 ### Degrees of Freedom
 
@@ -57,6 +58,7 @@ Subject to the following constraints:
 
 1. The store should not lose money on any sale (this is akin to setting a target profit margin of 1%)
 2. The difference between the final price (retail + shipping) should be as close to the actual production + shipping cost on average, with no gross inequities across products or regions
+  * In practice, some additional margin for marketing should also be considered.
 
 
 Since this is an inexact solution, there will inevitably be some products that end up more expensive than others, and some regions that are paying relatively more than others. However, doing this analysis is better than just using a rough heuristic because:
