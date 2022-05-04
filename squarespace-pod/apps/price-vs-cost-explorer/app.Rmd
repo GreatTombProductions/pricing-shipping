@@ -15,7 +15,6 @@ library(magrittr)
 ```{r data, include=FALSE}
 data <- readRDS("data.rds")
 regions <- readRDS("regions.rds")
-
 ```
 
 # Price vs Cost Map
@@ -34,16 +33,19 @@ shiny::selectizeInput(
   "products",
   "Products in Cart",
   choices = sort(unique(data$product)),
-  multiple = TRUE
+  multiple = TRUE,
+  width = "99%"
 )
 
 shiny::p("Add or delete items from the cart using the input above. Double click on a Quantity cell below to edit.")
 shiny::p("Note that non-integer quantities will be rounded, and values below 1 will be treated as excluding the item from the cart.")
 
+cart_table <- shiny::reactiveValues(tbl = tibble::tibble(Product = character(), Quantity = integer()))
+
 DT::DTOutput("cart", width = "99%")
 
 output$cart <- DT::renderDT({
-  tibble::tibble(Product = input$products, Quantity = rep(1, length(input$products))) %>% 
+  cart_table$tbl %>% 
     DT::datatable(
       editable = list(target = "cell", disable = list(columns = 0)),
       rownames = FALSE,
@@ -51,13 +53,52 @@ output$cart <- DT::renderDT({
     )
 })
 
+cart_proxy <- DT::dataTableProxy("cart")
+
+shiny::observeEvent(input$products, {
+  add_to_cart <- setdiff(input$products, cart_table$tbl$Product)
+  remove_from_cart <- setdiff(cart_table$tbl$Product, input$products)
+  
+  new_tbl <- dplyr::bind_rows(
+    dplyr::filter(cart_table$tbl, !Product %in% remove_from_cart),
+    tibble::tibble(Product = add_to_cart, Quantity = rep(1, length(add_to_cart)))
+  )
+
+  cart_table$tbl <- new_tbl
+})
+
+shiny::observeEvent(input$cart_cell_edit, {
+  info = input$cart_cell_edit
+  info$col <- info$col + 1
+  
+  cart_table$tbl <- DT::editData(
+    data = cart_table$tbl,
+    info, cart_proxy, resetPaging = FALSE
+  )
+})
+
 
 shiny::actionButton(
   "calculate",
-  "Calculate Prices and Costs by Region"
+  "Calculate Prices and Costs by Region",
+  width = "99%"
 )
 
+shiny::div(id = "display_var")
 
+display_choices <- c(
+  "Markup ($)" = "price_markup_dollars",
+  "Markup (%)" = "price_markup_percent",
+  "Total Price" = "total_price",
+  "Total Cost" = "total_cost"
+)
+
+shiny::selectInput(
+  "map_display", "",
+  choices = display_choices,
+  selected = "price_markup_percent",
+  width = "99%"
+)
 ```
 
 ## Map
@@ -66,14 +107,14 @@ shiny::actionButton(
 output$map <- leaflet::renderLeaflet({
   leaflet::leaflet("map") %>% 
     leaflet::addProviderTiles(leaflet::providers$CartoDB.Positron) %>% 
-    leaflet::setView(0, 0, zoom = 2) %>% 
-    leaflet::addPolygons(
-      data = regions,
-      color = "#000000FF",
-      weight = 1
-    )
+    leaflet::setView(0, 0, zoom = 2)
 })
 leaflet::leafletOutput("map", width = "100%", height = "100%")
+
+pal <- leaflet::colorNumeric(
+  palette = "YlOrRd",
+  domain = NULL
+)
 ```
 
 # Pricing Generator
@@ -81,15 +122,56 @@ leaflet::leafletOutput("map", width = "100%", height = "100%")
 
 ```{r calculate}
 
+shiny::observeEvent(c(input$calculate, input$map_display), {
+  compare <- cost_price_table$tbl %>%
+    dplyr::inner_join(cart_table$tbl, by = c("product" = "Product")) %>%
+    dplyr::transmute(
+      retail_price,
+      shipping_price,
+      production_cost = max_production_cost,
+      shipping_cost = shipping_cost + ((Quantity - 1) * additional_shipping)
+    ) %>%
+    dplyr::group_by(region) %>%
+    dplyr::summarize_all(sum) %>%
+    dplyr::mutate(
+      total_price = retail_price + shipping_price,
+      total_cost = production_cost + shipping_cost,
+      price_markup_dollars = total_price - total_cost,
+      price_markup_percent = price_markup_dollars / total_cost
+    ) %>%
+    {dplyr::left_join(regions, ., by = "region")}
+
+  leaflet::leafletProxy("map", data = compare) %>%
+    leaflet::clearGroup("Result") %>%
+    leaflet::clearControls() %>% 
+    leaflet::addPolygons(
+      color = "#ffffffff",
+      weight = 1,
+      fillOpacity = 0.2,
+      fillColor = pal(compare[[input$map_display]]),
+      popup = ~glue::glue(
+        "<b>{name_long}</b><br/>
+        <b>Shipping Region:</b> {region}</br>
+        <b>Total Price:</b> {scales::dollar(total_price, accuracy = 0.01)}</br>
+        <b>Total Cost:</b> {scales::dollar(total_cost, accuracy = 0.01)}</br>
+        <b>Markup ($):</b> {scales::dollar(price_markup_dollars, accuracy = 0.01)}</br>
+        <b>Markup (%):</b> {scales::percent(price_markup_percent, accuracy = 1)}"
+      ),
+      group = "Result"
+    ) %>% 
+    leaflet::addLegend(
+      pal = pal,
+      values = compare[[input$map_display]],
+      title = names(display_choices[display_choices == input$map_display])
+    )
+}, ignoreInit = TRUE, ignoreNULL = TRUE)
 
 ```
 
-
 ### Premade Strategies {data-height="200"}
 
-
 ```{r pricing_strategies}
-shiny::p("As we develop heuristics and algorithms to set prices across the inventory, they will be added below.")
+shiny::p("As we develop heuristics and algorithms to set prices across the inventory, buttons to implement them will be added in this section.")
 ```
 
 ### Table
@@ -118,8 +200,7 @@ table_proxy <- DT::dataTableProxy("cost_price_table")
 shiny::observeEvent(input$cost_price_table_cell_edit, {
   info = input$cost_price_table_cell_edit
   info$col <- info$col + 1
-  info$row <- info$row
-  
+
   cost_price_table$tbl <- DT::editData(
     data = cost_price_table$tbl,
     info, table_proxy, resetPaging = FALSE
