@@ -37,6 +37,26 @@ shiny::selectizeInput(
   width = "99%"
 )
 
+shiny::actionButton(
+  "calculate",
+  "Calculate Prices and Costs by Region",
+  width = "99%"
+)
+
+display_choices <- c(
+  "Markup ($)" = "price_markup_dollars",
+  "Markup (%)" = "price_markup_percent",
+  "Total Price" = "total_price",
+  "Total Cost" = "total_cost"
+)
+
+shiny::selectInput(
+  "map_display", "Map Display Layer",
+  choices = display_choices,
+  selected = "price_markup_percent",
+  width = "99%"
+)
+
 shiny::p("Add or delete items from the cart using the input above. Double click on a Quantity cell below to edit.")
 shiny::p("Note that non-integer quantities will be rounded, and values below 1 will be treated as excluding the item from the cart.")
 
@@ -76,29 +96,6 @@ shiny::observeEvent(input$cart_cell_edit, {
     info, cart_proxy, resetPaging = FALSE
   )
 })
-
-
-shiny::actionButton(
-  "calculate",
-  "Calculate Prices and Costs by Region",
-  width = "99%"
-)
-
-shiny::div(id = "display_var")
-
-display_choices <- c(
-  "Markup ($)" = "price_markup_dollars",
-  "Markup (%)" = "price_markup_percent",
-  "Total Price" = "total_price",
-  "Total Cost" = "total_cost"
-)
-
-shiny::selectInput(
-  "map_display", "",
-  choices = display_choices,
-  selected = "price_markup_percent",
-  width = "99%"
-)
 ```
 
 ## Map
