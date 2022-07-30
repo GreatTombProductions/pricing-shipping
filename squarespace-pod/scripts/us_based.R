@@ -1,6 +1,7 @@
 #' Price Items based on their US Shipping Costs
+library(magrittr)
 
-pivot_region <- "US"
+pivot_region <- "USA"
 margin <- 1.05
 pivot_price <- 1.99 
 transaction_fee <- 1.03
@@ -15,7 +16,18 @@ max_pivot <- data %>%
   dplyr::pull(pivot) %>% 
   min()
 
-assertthat::assert_that(pivot_price <= min_pivot)
+# the "pivot_price" is the shipping price will be set for the pivot_region (USA)
+# it will be subtracted from the retail price, after the shipping cost is baked in
+# if it is too high, then we will lose money when people order 2 or more items
+# for example, suppose someone orders 2 tank tops, cost 3.99 and 2.00 to ship, and we use 3.00 as our pivot_price
+# the marginless price of each tank top will be 19.95 + 3.99 - 3.00 = 20.94, 
+# the price of the order will be (2*20.94) + 3.00 = 41.88
+# the cost of the order will be 19.95 + 3.99 + 19.95 + 2 = 45.89
+
+# effectively, the pivot_region gets close to a 0 shipping price for each product. 
+# by setting a non-zero pivot price, the customer pays less for orders with more than one of a product
+
+assertthat::assert_that(pivot_price <= max_pivot)
 
 retail_prices <- data %>% 
   dplyr::filter(region == pivot_region) %>% 
@@ -61,7 +73,7 @@ prices <- data %>%
     shipping_price = ceiling(shipping_price * 100) / 100,
     total_price = retail_price + shipping_price,
     total_cost = max_production_cost + shipping_cost,
-    margin = round(100 * ((total_price / total_cost) - 1))
+    margin = ((total_price / total_cost) - 1)
   )
 
 View(prices)
