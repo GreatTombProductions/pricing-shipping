@@ -18,7 +18,8 @@ data <- shipping %>%
     dplyr::all_of(c("Shipping Cost", "Additional Shipping", "Max Production Cost")),
     ~as.numeric(stringr::str_sub(., start = 2))
   ) %>% 
-  dplyr::rename_with(janitor::make_clean_names)
+  dplyr::rename_with(janitor::make_clean_names) %>% 
+  dplyr::filter(!is.na(product))
 
 # Export ------------------------------------------------------------------
 
